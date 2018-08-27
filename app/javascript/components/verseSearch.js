@@ -3,8 +3,7 @@ import PropTypes from "prop-types"
 
 class VerseSearch extends React.Component {
  
- state = { bookNames: {},
-					loading: false,
+ static defaultProps = { 
 					versions: {"Amplified Bible": "eng-AMP",
    									 "Contemporary English Version": "eng-CEV",
 										 "Contemporary English Version (US Version)": "eng-CEVD",
@@ -15,31 +14,11 @@ class VerseSearch extends React.Component {
          							},
 }
 
- componentDidMount() {
-	 this.getBookNames();
- }
 
 componentWillMount() {
 	this.getTranslations();
 }
 
-  
-
- getBookNames = () => {
-		fetch(`https://cors-anywhere.herokuapp.com/https://bibles.org/v2/versions/${this.props.defaultTranslation}/books.js`, {
-					  headers: {
-										'Authorization': "Basic " + btoa(process.env.BIBLE_API_KEY + ":X")
-										 }
-						})
-		.then(response => response.json())
-		.then(data => {
-						let bookNames = {};
-						data.response.books.forEach( book => {
-							bookNames[book.name] = book.abbr
-						});
-						this.setState({bookNames: bookNames});
-		});
-	}
 
  getTranslations = () => {
 		fetch('https://cors-anywhere.herokuapp.com/https://bibles.org/v2/versions.js?language=eng-US', {
@@ -65,7 +44,7 @@ componentWillMount() {
 	}	
 
   render () {
-	const options =	Object.entries(this.state.versions).map( valuePair => 
+	const options =	Object.entries(this.props.versions).map( valuePair => 
 												 <option key={valuePair[1]} value={valuePair[1]}>{valuePair[0]}</option>
 												 ) 	
 											

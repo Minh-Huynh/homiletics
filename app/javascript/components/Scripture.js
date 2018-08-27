@@ -11,7 +11,7 @@ class Scripture extends React.Component {
  };
 
 	componentDidUpdate(prevProps, prevState, snapshot){
-		if(this.state.translation != prevState.translation){
+		if(this.state.translation != prevState.translation && !!this.state.searchTerm){
 				this.getVerses(this.state.searchTerm);
 		}
  }	
