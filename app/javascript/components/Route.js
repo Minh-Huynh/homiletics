@@ -8,10 +8,10 @@ class Route extends React.Component {
     return (
 			<RouterContext.Consumer>
 			{router => {
-					const {path, render, component: Component} = this.props;
+					const {path, render, component: Component, setVerses, verses} = this.props;
 					if (router.location.pathname.startsWith(path)) {
 									if (render) return render();
-									if (Component) return <Component />;
+									if (Component) return React.cloneElement(<Component/>, {setVerses: setVerses});
 					}
 					return null;
 			  }

@@ -1,9 +1,10 @@
 import React from "react"
 import PropTypes from "prop-types"
 import VerseSearch from "./verseSearch"
+import { AppContext } from "./App"
 
 class Scripture extends React.Component {
-				 state = {verses: "",
+				 state = {
 									loading: false,
 									translation: "eng-NASB",
 									formatError: false,
@@ -17,7 +18,7 @@ class Scripture extends React.Component {
  }	
 
 	setVerses(verses){
-					this.setState({verses: verses});
+					this.props.setVerses(verses);
 	}
 
 	toggleLoadIcon(){
@@ -44,29 +45,37 @@ class Scripture extends React.Component {
 										var passages = data.response.search.result.passages;
 										if (passages.length < 1){
 														this.setState({formatError: true })
+														this.props.setVerses("Could not find passage. Make sure that your scripture query follows the format of something like 'Psalm 23:1-2'</div>");
 										}else {
 														this.setState({formatError: false});
-														this.setState({verses: passages[0].text});
+														this.props.setVerses(passages[0].text);
 										}
 						});
 	}
 
   render () {
-							let content;
-							if(this.state.loading){
-							content = <div>Loading...</div>
-							}else {
-							content = <div dangerouslySetInnerHTML={{__html: this.state.verses}} />
-							}
 			return(
-							<div>
-											{this.state.formatError && <div>Could not find passage. Make sure that your scripture query follows the format of something like 'Psalm 23:1-2'</div>}
-											<VerseSearch loadToggle={() => this.toggleLoadIcon()} 
-																	 onSearch={(searchTerms) => this.getVerses(searchTerms)}
-																	 onTranslationChange={(event) => this.setTranslation(event.target.value)}
-																	 defaultTranslation= {this.state.translation} />
-							{content}
-							</div>
+	  		<AppContext.Consumer>
+	  			{context => {
+	  				const {setVerses} = this.props;
+								let content;
+								if(this.state.loading){
+								content = <div>Loading...</div>
+								}else {
+								content = <div dangerouslySetInnerHTML={{__html: context.verses}} />
+								}
+								return (
+									<div>
+												<VerseSearch loadToggle={() => this.toggleLoadIcon()} 
+																		 onSearch={(searchTerms) => this.getVerses(searchTerms)}
+																		 onTranslationChange={(event) => this.setTranslation(event.target.value)}
+																		 defaultTranslation= {this.state.translation} />
+										{content}
+									</div>
+								);
+		  			}
+		  		}
+		  	</AppContext.Consumer>
 			);
  } 
 }
