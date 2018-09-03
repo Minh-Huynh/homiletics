@@ -34,7 +34,7 @@ class Scripture extends React.Component {
 		this.state.searchTerm != searchTerms && this.setState({searchTerm: searchTerms});
 		const verseRegex = /^(.+) ([\d-:]+)?/ 
 		let [, book, section]  = verseRegex.exec(searchTerms.trim());
-		fetch(`https://cors-anywhere.herokuapp.com/https://bibles.org/v2/passages.js?q[]=${book}+${section}&version=${this.state.translation}`, {
+		fetch(`https://cors-homiletics.herokuapp.com/https://bibles.org/v2/passages.js?q[]=${book}+${section}&version=${this.state.translation}`, {
 										headers: {
 														'Authorization': "Basic " + btoa(process.env.BIBLE_API_KEY + ":X")
 														 }
@@ -48,9 +48,45 @@ class Scripture extends React.Component {
 														this.props.setVerses("Could not find passage. Make sure that your scripture query follows the format of something like 'Psalm 23:1-2'</div>");
 										}else {
 														this.setState({formatError: false});
-														this.props.setVerses(passages[0].text);
+														var test = this.insertVerseDivs(passages[0].text);
+														this.props.setVerses(this.insertVerseDivs(passages[0].text).body.innerHTML);
 										}
-						});
+						})
+						.catch(error => console.error('Error:', error));;
+	}
+
+	insertVerseDivs(passageText){
+		let currentlyInsideVerse;
+		let partOfVerse = 1;
+		let passageDOM = new DOMParser().parseFromString(passageText, "text/html");
+		let paragraphs = passageDOM.getElementsByTagName("p");
+		Array.from(paragraphs).forEach( paragraph => {
+			let nextSib = paragraph.firstChild;
+			let nextSibContainer;
+			let wrapper = passageDOM.createElement('span');
+			while(nextSib){
+				if(currentlyInsideVerse && 
+		           nextSib.tagName !== "SUP" && 
+				   paragraph.firstChild == nextSib) {
+					partOfVerse++;
+					wrapper.setAttribute('id', `${currentlyInsideVerse}.${partOfVerse}`);
+					nextSib.parentNode.insertBefore(wrapper, nextSib);
+				}else if(nextSib.tagName === "SUP") {
+					currentlyInsideVerse = nextSib.id; 
+					partOfVerse = 1;
+					wrapper = passageDOM.createElement('span');
+					wrapper.setAttribute('id', `${currentlyInsideVerse}.${partOfVerse}`);
+					nextSib.parentNode.insertBefore(wrapper, nextSib);
+				}
+				nextSibContainer = nextSib.nextSibling;
+				wrapper.appendChild(nextSib);
+				nextSib = nextSibContainer;
+			};
+
+		});
+		debugger;
+		return passageDOM;
+
 	}
 
   render () {
