@@ -5,6 +5,7 @@ import Link from "./Link"
 import Route from "./Route"
 import Scripture from "./Scripture"
 import VerseSearch from "./verseSearch"
+import Content from "./Content"
 
 const AppContext = React.createContext();
 
@@ -29,6 +30,7 @@ class App extends React.Component {
 									<Link to="/subject">Subject Sentence</Link>
 									<Route path="/passage" component={Scripture}
 									                       setVerses={(verses) => this.setVerses(verses)} />
+									<Route path="/content" component={Content} />
 								</Router>
 				</div>
 			</AppContext.Provider>
