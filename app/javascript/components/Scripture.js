@@ -1,7 +1,11 @@
 import React from "react"
 import PropTypes from "prop-types"
 import VerseSearch from "./verseSearch"
+import Verse from "./Verse"
 import { AppContext } from "./App"
+import ReactDOMServer from 'react-dom/server'
+import HtmlToReact from "html-to-react"
+import { Parser } from "html-to-react"
 
 class Scripture extends React.Component {
 				 state = {
@@ -29,7 +33,7 @@ class Scripture extends React.Component {
 		this.setState({translation: translation});
 	}
 
- getVerses = (searchTerms) => {
+ 	getVerses = (searchTerms) => {
 		this.toggleLoadIcon();
 		this.state.searchTerm != searchTerms && this.setState({searchTerm: searchTerms});
 		const verseRegex = /^(.+) ([\d-:]+)?/ 
@@ -48,13 +52,39 @@ class Scripture extends React.Component {
 														this.props.setVerses("Could not find passage. Make sure that your scripture query follows the format of something like 'Psalm 23:1-2'</div>");
 										}else {
 														this.setState({formatError: false});
-														var test = this.insertVerseDivs(passages[0].text);
-														this.props.setVerses(this.insertVerseDivs(passages[0].text).body.innerHTML);
+														var textWithDivs = this.insertVerseDivs(passages[0].text);
+														var textWithComponents = this.replaceVerseDivsWithComponents(textWithDivs.body.innerHTML);
+														this.props.setVerses(textWithComponents);
 										}
 						})
 						.catch(error => console.error('Error:', error));;
 	}
+	replaceVerseDivsWithComponents(passageText){
+		var htmlToReactParser = new Parser();
+		var isValidNode = () => true;
+		var processNodeDefinitions = new HtmlToReact.ProcessNodeDefinitions(React);
+		var processingInstruction = [
+			{
+				replaceChildren: true,
+				shouldProcessNode: (node) => {
+					return node.attribs && node.attribs['class'] === 'verse';
+			
+				},
+				processNode: (node, children, index) => {
+					return <Verse>{children}</Verse>
+				}
+			},
+			{
+				shouldProcessNode: (node) => true,
+				processNode: processNodeDefinitions.processDefaultNode,
+			},
+		];
+		var reactComponent = htmlToReactParser.parseWithInstructions(passageText, isValidNode, processingInstruction);
+		var reactHTML = ReactDOMServer.renderToStaticMarkup(reactComponent);
+		return reactHTML;
 
+	}
+	//Bible API doesn't have any wrappers around the verses, so this function adds spans
 	insertVerseDivs(passageText){
 		let currentlyInsideVerse;
 		let partOfVerse = 1;
@@ -70,12 +100,14 @@ class Scripture extends React.Component {
 				   paragraph.firstChild == nextSib) {
 					partOfVerse++;
 					wrapper.setAttribute('id', `${currentlyInsideVerse}.${partOfVerse}`);
+					wrapper.setAttribute('class', `verse`);
 					nextSib.parentNode.insertBefore(wrapper, nextSib);
 				}else if(nextSib.tagName === "SUP") {
 					currentlyInsideVerse = nextSib.id; 
 					partOfVerse = 1;
 					wrapper = passageDOM.createElement('span');
 					wrapper.setAttribute('id', `${currentlyInsideVerse}.${partOfVerse}`);
+					wrapper.setAttribute('class', `verse`);
 					nextSib.parentNode.insertBefore(wrapper, nextSib);
 				}
 				nextSibContainer = nextSib.nextSibling;
@@ -84,7 +116,6 @@ class Scripture extends React.Component {
 			};
 
 		});
-		debugger;
 		return passageDOM;
 
 	}
@@ -94,21 +125,21 @@ class Scripture extends React.Component {
 	  		<AppContext.Consumer>
 	  			{context => {
 	  				const {setVerses} = this.props;
-								let content;
-								if(this.state.loading){
-								content = <div>Loading...</div>
-								}else {
-								content = <div dangerouslySetInnerHTML={{__html: context.verses}} />
-								}
-								return (
-									<div>
-												<VerseSearch loadToggle={() => this.toggleLoadIcon()} 
-																		 onSearch={(searchTerms) => this.getVerses(searchTerms)}
-																		 onTranslationChange={(event) => this.setTranslation(event.target.value)}
-																		 defaultTranslation= {this.state.translation} />
-										{content}
-									</div>
-								);
+					let content;
+					if(this.state.loading){
+						content = <div>Loading...</div>
+						}else {
+						content = <div dangerouslySetInnerHTML={{__html: context.verses}} />
+						}
+						return (
+							<div>
+								<VerseSearch loadToggle={() => this.toggleLoadIcon()} 
+											 onSearch={(searchTerms) => this.getVerses(searchTerms)}
+											 onTranslationChange={(event) => this.setTranslation(event.target.value)}
+											 defaultTranslation= {this.state.translation} />
+								{content}
+							</div>
+						);
 		  			}
 		  		}
 		  	</AppContext.Consumer>
